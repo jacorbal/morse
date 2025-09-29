@@ -10,7 +10,7 @@ decoding.
   - Initialize and destroy Morse code binary trees.
   - Encode strings into Morse code with configurable options.
   - Support for Morse separators (spaces between characters and words).
-  - Support for prosigns such as "SK", "AR", and "CT" for special
+  - Support for prosigns such as "`SK`", "`AR`", and "`CT`" for special
     transmission signals.
   - Uses an AVL tree for efficient character lookup and encoding based
     on Morse priority.
@@ -26,25 +26,25 @@ decoding.
 
 Create a new Morse code tree:
 
-        morse_tree_td *morse_tree = morse_init();
-        if (morse_tree == NULL) {
-            /* Handle error */
-        }
+    morse_tree_td *morse_tree = morse_init();
+    if (morse_tree == NULL) {
+        /* Handle error */
+    }
 
 ### Encoding a message
 
 Encode an ASCII string into Morse code:
 
-        char encoded[MORSE_MESSAGE_MAX_LENGTH];
-        const char *inpupt = "Hello, World";
+    char encoded[MORSE_MESSAGE_MAX_LENGTH];
+    const char *inpupt = "Hello, World";
 
-        if (morse_encode(morse_tree, morse_message, input,
-                     MORSE_USE_SEPARATORS | MORSE_USE_PROSIGNS) != 0) {
-            fprintf(stderr, "Encoding failed\n");
-            morse_destroy(morse);
-            return -1;
-        }
-        printf("Morse code: %s\n", encoded);
+    if (morse_encode(morse_tree, morse_message, input,
+                 MORSE_USE_SEPARATORS | MORSE_USE_PROSIGNS) != 0) {
+        fprintf(stderr, "Encoding failed\n");
+        morse_destroy(morse_tree);
+        return -1;
+    }
+    printf("Encoded: %s\n", encoded);
 
 ### Decoding a message
 
@@ -55,24 +55,24 @@ Decode a Morse code string into ASCII:
 
     if (morse_decode(morse, decoded, input, MORSE_USE_SEPARATORS) != 0) {
         fprintf(stderr, "Decoding failed\n");
-        morse_destroy(morse);
+        morse_destroy(morse_tree);
         return -1;
     }
-    printf("Decoded text: '%s'\n", decoded);
+    printf("Decoded: '%s'\n", decoded);
 
 ### Flags
 
   - **`MORSE_NO_FLAGS`**.  No special features.
   - **`MORSE_USE_SEPARATORS`**.  Use spaces to separate characters and
     words.
-  - **`MORSE_USE_PROSIGNS`**.  Include prosigns like "AR", "SK", "CT" at
-    start and end.
+  - **`MORSE_USE_PROSIGNS`**.  Include prosigns like "`AR`", "`SK`",
+    "`CT`" at start and end.
 
 ### Cleanup
 
 Destroy the Morse tree when done:
 
-        morse_destroy(morse_tree);
+    morse_destroy(morse_tree);
 
 ## Constants and macros
 
@@ -83,7 +83,7 @@ Destroy the Morse tree when done:
     dash ("dah").
   - **Separator constants.**  Define spacing between characters and
     words.
-  - **Prosigns.** Special Morse signals such as "AR", "SK", "CT".
+  - **Prosigns.** Special Morse signals such as "`AR`", "`SK`", "`CT`".
 
 ## Notes
 
