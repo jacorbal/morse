@@ -1,4 +1,4 @@
-# `morse` -- Morse encoder (in C)
+# `morse` -- Morse encoder and decoder C library
 
 Encode text messages into Morse code using a binary search tree (AVL
 tree) structure.  It supports customizable encoding options, including
@@ -33,14 +33,34 @@ Create a new Morse code tree:
 
 ### Encoding a message
 
-Encode a string into Morse code:
+Encode an ASCII string into Morse code:
 
-        char morse_message[MORSE_MESSAGE_MAX_LENGTH];
-        const char *text = "Hello, World";
+        char encoded[MORSE_MESSAGE_MAX_LENGTH];
+        const char *inpupt = "Hello, World";
 
-        morse_encode(morse_tree, morse_message, text,
-                     MORSE_USE_SEPARATORS | MORSE_USE_PROSIGNS);
-        printf("Morse code: %s\n", morse_message);
+        if (morse_encode(morse_tree, morse_message, input,
+                     MORSE_USE_SEPARATORS | MORSE_USE_PROSIGNS) != 0) {
+        fprintf(stderr, "Encoding failed\n");
+        morse_destroy(morse);
+            return -1;
+        }
+        printf("Morse code: %s\n", encoded);
+
+### Decoding a message
+
+Decode a Morse code string into ASCII:
+
+    char decoded[MORSE_MESSAGE_MAX_LENGTH + 1] = {'\0'};
+    const char *input = "... --- ... / .- .-."; /* "SOS AR" (SOS AR) */
+
+    if (morse_decode(morse, decoded, input, MORSE_USE_SEPARATORS) != 0) {
+        fprintf(stderr, "Decoding failed\n");
+        morse_destroy(morse);
+        return -1;
+    }
+    printf("Decoded text: '%s'\n", decoded);
+
+### Flags
 
 - Flags:
   - **`MORSE_NO_FLAGS`**.  No special features.

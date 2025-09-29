@@ -98,7 +98,7 @@ static void s_morse_generate_nodes(morse_tree_td *morse)
        /* NOTE.  Insertion order matters: different insertion sequences
         * may produce structurally different AVL trees even when they
         * contain the same keys.  This exact sequence is used to
-        * reproduce the original Morse-code tree using a breadth-first
+        * reproduce the original Morse code tree using a breadth-first
         * layout with the root first. */
 
     for (size_t i = 0; i < MORSE_MAX_NODES; ++i) {
