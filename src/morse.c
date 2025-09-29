@@ -7,6 +7,7 @@
  */
 
 /* Data type includes */
+#include <ctype.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -23,7 +24,7 @@
 
 
 /* Compare two characters to get their order according to the Morse code */
-static int _compare(const void *key1, const void *key2)
+static int s_compare(const void *key1, const void *key2)
 {
     int64_t pos1 = strchr(MORSE_WEIGHTED_NODES,
             toupper(*(char *) key1)) - MORSE_WEIGHTED_NODES;
@@ -40,8 +41,57 @@ static int _compare(const void *key1, const void *key2)
 }
 
 
+/**
+ * @brief Trim leading and trailing whitespace characters from
+ *        a C string in-place
+ *
+ * @param s  Pointer to a null-terminated C string to trim
+ *
+ * @note The function only removes ASCII space ' ' as used by
+ *       @e MORSE_SEP/...
+ */
+void s_trim(char *s)
+{
+    char *start;
+    char *end;
+
+    if (s == NULL) {
+        return;
+    }
+
+    /* Pointer to the first non-space character (leading) */
+    start = s;
+    while (*start && isspace((unsigned char) *start)) {
+        start++;
+    }
+
+    /* If the string contains only spaces, make it an empty string */
+    if (*start == '\0') {
+        s[0] = '\0';
+        return;
+    }
+
+    /* Pointer to the end of the useful portion */
+    end = start + strlen(start) - 1;
+    while (end > start && isspace((unsigned char) *end)) {
+        end--;
+    }
+    /* 'end' points to the last non-space character; place terminator */
+    *(end + 1) = '\0';
+
+    /* If 'start' is not at the beginning, shift the substring to the
+     * start of the buffer */
+    if (start != s) {
+        char *dst = s;
+        while ((*dst++ = *start++) != '\0') {
+            /* Copy including terminator */
+        }
+    }
+}
+
+
 /* Fill the Morse tree with the alphabet */
-static void _morse_generate_nodes(morse_tree_td *morse)
+static void s_morse_generate_nodes(morse_tree_td *morse)
 {
     char *data[MORSE_MAX_NODES];
     char morse_nodes[MORSE_MAX_NODES] =
@@ -88,7 +138,7 @@ static void _morse_generate_nodes(morse_tree_td *morse)
  *       function is @e O(log n), where @e n is the number of nodes in
  *       the binary tree specified by @e MORSE_MAX_NODES
  */
-static int _morse_encode_char(const morse_tree_td *morse,
+static int s_morse_encode_char(const morse_tree_td *morse,
         const bitree_node_td *node, const char *data, char *dst,
         bool use_separators)
 {
@@ -106,7 +156,7 @@ static int _morse_encode_char(const morse_tree_td *morse,
         if (use_separators) {
             strcat(dst, MORSE_SEP);
         }
-        retval = _morse_encode_char(morse, bitree_left(node), data, dst,
+        retval = s_morse_encode_char(morse, bitree_left(node), data, dst,
                 use_separators);
     } else if (cmpval > 0) {
         /* Move to the right after adding a 'dah' (dash) */
@@ -114,7 +164,7 @@ static int _morse_encode_char(const morse_tree_td *morse,
         if (use_separators) {
             strcat(dst, MORSE_SEP);
         }
-        retval = _morse_encode_char(morse, bitree_right(node), data, dst,
+        retval = s_morse_encode_char(morse, bitree_right(node), data, dst,
                 use_separators);
     } else {
         if (!(bistree_is_hidden(node))) {
@@ -129,17 +179,76 @@ static int _morse_encode_char(const morse_tree_td *morse,
 }
 
 
+/**
+ * @brief Decode a single Morse string into its character
+ *
+ * @param morse     Morse tree
+ * @param morse_str String with the Morse code for one character
+ * @param dst       Pointer to a char where the decoded character will
+ *                  be stored
+ *
+ * @return Status of the lookup operation
+ * @retval  0 The character was decoded successfully and stored in @p dst
+ * @retval -1 The code is invalid (path does not exist or node is hidden)
+ *
+ * @note This function walks the same binary tree used for encoding:
+ *       each 'dit' (@e MORSE_DIT[0]) moves to the left child and each
+ *       'dah' (@e MORSE_DAH[0]) moves to the right child.
+ */
+static int s_morse_decode_char(const morse_tree_td *morse,
+        const char *morse_str, char *dst)
+{
+    const bitree_node_td *node;
+
+    if (morse == NULL || morse_str == NULL || dst == NULL) {
+        return -1;
+    }
+
+    node = bitree_root(morse);
+    if (bitree_is_eob(node)) {
+        return -1;
+    }
+
+    for (size_t i = 0; morse_str[i] != '\0'; ++i) {
+        char c = morse_str[i];
+
+        /* Ignore separators characters if they appear inside the token */
+        if (c == MORSE_SEP[0]) {
+            continue;
+        } else if (c == MORSE_DIT[0]) {
+            node = bitree_left(node);
+        } else if (c == MORSE_DAH[0]) {
+            node = bitree_right(node);
+        } else {
+            /* Unexpected character in morse_str */
+            return -1;
+        }
+
+        if (bitree_is_eob(node)) {
+            return -1;
+        }
+    }
+
+    if (bistree_is_hidden(node)) {
+        return -1;
+    }
+
+    *dst = *(char *) bistree_data(node);
+    return 0;
+}
+
+
 /* Initialize a new Morse tree */
 morse_tree_td *morse_init(void)
 {
     morse_tree_td *morse;
 
-    morse = bistree_init(_compare, free);
+    morse = bistree_init(s_compare, free);
     if (morse == NULL) {
         return NULL;
     }
 
-    _morse_generate_nodes(morse);
+    s_morse_generate_nodes(morse);
 
     return morse;
 }
@@ -147,24 +256,34 @@ morse_tree_td *morse_init(void)
 
 /* Encode a entire string until the 'NULL' character is found */
 // TODO: Consider using 'strtok' to separate words
-void morse_encode(const morse_tree_td *morse,
+int morse_encode(const morse_tree_td *morse,
         char *dst, const char *src, uint8_t flags)
 {
     char *data;
     char *tmp;
+    size_t src_len;
+
+    if (morse == NULL || dst == NULL || src == NULL) {
+        return -1;
+    }
 
     tmp = malloc(sizeof(char));
     if (tmp == NULL) {
-        return;
+        return -1;
     }
+
+    src_len = strlen(src);
+    dst[0] = '\0';
 
     /* Start the transmission: add prosign <CT> */
     if (flags & MORSE_USE_PROSIGNS) {
         for (size_t i = 0; i < strlen(MORSE_PROSIGN_CT); ++i) {
             *tmp = MORSE_PROSIGN_CT[i];
             data = tmp;
-            _morse_encode_char(morse, bitree_root(morse), data, dst,
-                    (flags & MORSE_USE_SEPARATORS) > 0);
+            if (s_morse_encode_char(morse, bitree_root(morse), data, dst,
+                    (flags & MORSE_USE_SEPARATORS) > 0) != 0) {
+                return -1;
+            }
         }
 
         if (flags & MORSE_USE_SEPARATORS) {
@@ -173,7 +292,7 @@ void morse_encode(const morse_tree_td *morse,
     }
 
     /* Send the transmission */
-    for (size_t i = 0; i < strlen(src); ++i) {
+    for (size_t i = 0; i < src_len; ++i) {
         /* Ignore filler characters */
         if (src[i] == '~' ||
                 src[i] == '(' || src[i] == ')' ||
@@ -195,8 +314,10 @@ void morse_encode(const morse_tree_td *morse,
             *tmp = src[i];
             data = tmp;
 
-            _morse_encode_char(morse, bitree_root(morse), data, dst,
-                    (flags & MORSE_USE_SEPARATORS) > 0);
+            if (s_morse_encode_char(morse, bitree_root(morse), data, dst,
+                    (flags & MORSE_USE_SEPARATORS) > 0) != 0) {
+                return -1;
+            }
             if ((flags & MORSE_USE_SEPARATORS) &&
                     src[i + 1] != ' ' && src[i + 1] != '\0') {
                 strcat(dst, MORSE_CHAR_SEPARATOR);
@@ -213,10 +334,125 @@ void morse_encode(const morse_tree_td *morse,
         for (size_t i = 0; i < strlen(MORSE_PROSIGN_SK); ++i) {
             *tmp = MORSE_PROSIGN_SK[i];
             data = tmp;
-            _morse_encode_char(morse, bitree_root(morse), data, dst,
-                    (flags & MORSE_USE_SEPARATORS) > 0);
+            if (s_morse_encode_char(morse, bitree_root(morse), data, dst,
+                    (flags & MORSE_USE_SEPARATORS) > 0) != 0){
+                return -1;
+            }
         }
     }
 
     free(tmp);
+    return 0;
+}
+
+
+/* Decode a full Morse message */
+int morse_decode(const morse_tree_td *morse,
+        char *dst, const char *src, uint8_t flags)
+{
+    char token[MORSE_MESSAGE_MAX_LENGTH + 1];
+    size_t tok_pos = 0;
+    size_t out_pos = 0;
+    size_t i = 0;
+    size_t src_len;
+
+    if (morse == NULL || dst == NULL || src == NULL) {
+        return -1;
+    }
+
+    src_len = strlen(src);
+    dst[0] = '\0';
+
+    while (i < src_len && out_pos < MORSE_MESSAGE_MAX_LENGTH) {
+        size_t run;
+
+        /* If separators mode is enabled, check for word separator first */
+        if ((flags & MORSE_USE_SEPARATORS) &&
+                i + strlen(MORSE_WORD_SEPARATOR) <= src_len &&
+                strncmp(&src[i], MORSE_WORD_SEPARATOR,
+                    strlen(MORSE_WORD_SEPARATOR)) == 0) {
+            /* finalize current token */
+            if (tok_pos > 0) {
+                char decoded;
+                token[tok_pos] = '\0';
+                if (s_morse_decode_char(morse, token, &decoded) == 0) {
+                    dst[out_pos++] = decoded;
+                }
+                tok_pos = 0;
+            }
+            /* append space as word separator */
+            dst[out_pos++] = ' ';
+            i += strlen(MORSE_WORD_SEPARATOR);
+            continue;
+        }
+
+        /* If separators mode is enabled, check for character separator */
+        if ((flags & MORSE_USE_SEPARATORS) &&
+                i + strlen(MORSE_CHAR_SEPARATOR) <= src_len &&
+                strncmp(&src[i], MORSE_CHAR_SEPARATOR,
+                    strlen(MORSE_CHAR_SEPARATOR)) == 0) {
+            if (tok_pos > 0) {
+                char decoded;
+                token[tok_pos] = '\0';
+                if (s_morse_decode_char(morse, token, &decoded) == 0) {
+                    dst[out_pos++] = decoded;
+                }
+                tok_pos = 0;
+            }
+            i += strlen(MORSE_CHAR_SEPARATOR);
+            continue;
+        }
+
+        /* Non-separators mode: single space separates characters; two
+         * or more spaces separate words */
+        if (!(flags & MORSE_USE_SEPARATORS) && src[i] == ' ') {
+            if (tok_pos > 0) {
+                char decoded;
+                token[tok_pos] = '\0';
+                if (s_morse_decode_char(morse, token, &decoded) == 0) {
+                    dst[out_pos++] = decoded;
+                }
+                tok_pos = 0;
+            }
+            /* Count consecutive spaces to detect word boundary */
+            run = 1;
+            while (i + run < src_len && src[i + run] == ' ') {
+                ++run;
+            }
+            if (run >= 2) {
+                /* treat as word separator */
+                dst[out_pos++] = ' ';
+            }
+            i += run;
+            continue;
+        }
+
+        /* Accept only 'MORSE_DIT', 'MORSE_DAH' or single-space
+         * separators inside token */
+        if (src[i] == MORSE_DIT[0] || src[i] == MORSE_DAH[0] ||
+                src[i] == MORSE_SEP[0]) {
+            if (tok_pos < sizeof(token) - 1) {
+                token[tok_pos++] = src[i];
+            } else {
+                /* token too long: drop it (robustness) */
+                tok_pos = 0;
+            }
+        }
+        /* Ignore any other characters */
+        ++i;
+    }
+
+    /* Process final token if any */
+    if (tok_pos > 0 && out_pos < MORSE_MESSAGE_MAX_LENGTH) {
+        char decoded;
+        token[tok_pos] = '\0';
+        if (s_morse_decode_char(morse, token, &decoded) == 0) {
+            dst[out_pos++] = decoded;
+        }
+    }
+
+    dst[out_pos] = '\0';
+    s_trim(dst);
+
+    return 0;
 }

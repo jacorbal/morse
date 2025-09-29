@@ -138,11 +138,37 @@ morse_tree_td *morse_init(void);
  *      - @e MORSE_USE_SEPARATORS: use word and character separators
  *      - @e MORSE_USE_PROSIGNS: add prosigns to start and end transmission
  *
+ * @return 0 on success, -1 on invalid parameters
+ *
  * @note The string @e encoded points to the encoded string upon return
  *
  * @todo The final string @e dst has to be trimmed (no trailing spaces)
  */
-void morse_encode(const morse_tree_td *morse,
+int morse_encode(const morse_tree_td *morse,
+        char *dst, const char *src, uint8_t flags);
+
+/**
+ * @brief Decode a full Morse transmission string into plain text
+ *
+ * @param morse Morse tree
+ * @param dst   Output buffer for decoded text
+ * @param src   Input Morse string (may contain separators as defined)
+ * @param flags Flags controlling parsing
+ *      - @e MORSE_NO_FLAGS: do not use any flag
+ *      - @e MORSE_USE_SEPARATORS: use word and character separators
+ *      - @e MORSE_USE_PROSIGNS: add prosigns to start and end transmission
+ *
+ * @return 0 on success, -1 on invalid parameters
+ *
+ * @note Output buffer must be at least @e MORSE_MESSAGE_MAX_LENGTH + 1
+ * @note If @e MORSE_USE_SEPARATORS is set, this function treats the
+ *       multi-space strings @e MORSE_CHAR_SEPARATOR and @e
+ *       MORSE_WORD_SEPARATOR as delimiters.  If not set, single space
+ *       ' ' separates characters and a run of two or more spaces is
+ *       treated as a word separator.
+ * @note Decoded string is trimmed of leading and trailng whitespaces
+ */
+int morse_decode(const morse_tree_td *morse,
         char *dst, const char *src, uint8_t flags);
 
 /**

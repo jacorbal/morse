@@ -1,7 +1,7 @@
 /**
  * @file main.c
  *
- * @brief Example of Morse encoding implementation
+ * @brief Example of Morse encoding and decoding implementation
  */
 
 /* Data type includes */
@@ -49,6 +49,7 @@ int main(void)
 {
     morse_tree_td *morse;
     char encoded[MORSE_MESSAGE_MAX_LENGTH] = {'\0'};
+    char decoded[MORSE_MESSAGE_MAX_LENGTH + 1] = {'\0'};
 
     morse = morse_init();
     if (morse == NULL) {
@@ -63,9 +64,24 @@ int main(void)
     //printf("Fctr: %d\n", bistree_factor(bitree_root(morse)));
 #endif  /* ! DEBUG */
 
-    morse_encode(morse, encoded, "What hath God wrought",
-            MORSE_USE_SEPARATORS | MORSE_USE_PROSIGNS);
-    printf("%s\n", encoded);
+    /* Encode */
+    if (morse_encode(morse, encoded, "What hath God wrought",
+            MORSE_USE_SEPARATORS | MORSE_USE_PROSIGNS) != 0) {
+        fprintf(stderr, "Encoding failed\n");
+        morse_destroy(morse);
+        return 2;
+        
+    }
+    printf("Encoded:\n%s\n", encoded);
+
+    /* Decode */
+    if (morse_decode(morse, decoded, encoded,
+                MORSE_USE_SEPARATORS) != 0) {
+        fprintf(stderr, "Decoding failed\n");
+        morse_destroy(morse);
+        return 2;
+    }
+    printf("Decoded: '%s'\n", decoded);
 
     morse_destroy(morse);
 
