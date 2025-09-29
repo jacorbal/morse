@@ -7,12 +7,11 @@
  */
 
 /* Data type includes */
-#include <ctype.h>
 #include <stdbool.h>
 #include <stdint.h>
 
 /* System includes */
-#include <ctype.h>  /* toupper */
+#include <ctype.h>  /* isspace, toupper */
 #include <stdlib.h> /* malloc, free, NULL */
 #include <string.h> /* strchr */
 
@@ -96,18 +95,18 @@ static void s_morse_generate_nodes(morse_tree_td *morse)
     char *data[MORSE_MAX_NODES];
     char morse_nodes[MORSE_MAX_NODES] =
         "~ETIAMNSURWDKGOHVFLPJBXYCZQ()543[2]+16=/7890";
-       /* NOTE.  There are several AVL trees that comply with the
-        * balancing and order of the tree for the same data, so its
-        * outcome is not unique and for that reason the inserting order
-        * is important: it has to be in this way in order to achieve
-        * a replica of the original Morse code tree */
+       /* NOTE.  Insertion order matters: different insertion sequences
+        * may produce structurally different AVL trees even when they
+        * contain the same keys.  This exact sequence is used to
+        * reproduce the original Morse-code tree using a breadth-first
+        * layout with the root first. */
 
-    for (int_fast32_t i = 0; i < MORSE_MAX_NODES; ++i) {
+    for (size_t i = 0; i < MORSE_MAX_NODES; ++i) {
         if (morse_nodes[i] == '\0') {
             continue;
         }
 
-        data[i] = malloc(sizeof(char));
+        data[i] = malloc(sizeof(*data[i]));
         if (data[i] == NULL) {
             break;
         }
@@ -130,7 +129,7 @@ static void s_morse_generate_nodes(morse_tree_td *morse)
  * @param dst   Pointer to the string with the Morse coded character
  *
  * @return Status of the lookup operation
- * @retval 0 The character is on the Morse tree
+ * @retval 0 The character is on the Morse tree, or otherwise
  *
  * @note If the character is found, @e dst points to the matching string
  * @note If the character is not found, @e dst points to an empty string
@@ -142,7 +141,7 @@ static int s_morse_encode_char(const morse_tree_td *morse,
         const bitree_node_td *node, const char *data, char *dst,
         bool use_separators)
 {
-    int cmpval, retval;
+    int cmpval;
 
     if (bitree_is_eob(node)) {
         /* Return that the data was not found */
@@ -156,7 +155,7 @@ static int s_morse_encode_char(const morse_tree_td *morse,
         if (use_separators) {
             strcat(dst, MORSE_SEP);
         }
-        retval = s_morse_encode_char(morse, bitree_left(node), data, dst,
+        return s_morse_encode_char(morse, bitree_left(node), data, dst,
                 use_separators);
     } else if (cmpval > 0) {
         /* Move to the right after adding a 'dah' (dash) */
@@ -164,18 +163,17 @@ static int s_morse_encode_char(const morse_tree_td *morse,
         if (use_separators) {
             strcat(dst, MORSE_SEP);
         }
-        retval = s_morse_encode_char(morse, bitree_right(node), data, dst,
+        return s_morse_encode_char(morse, bitree_right(node), data, dst,
                 use_separators);
-    } else {
-        if (!(bistree_is_hidden(node))) {
-            retval = 0;
-        } else {
-            /* Return that the data was not found */
-            return -1;
-        }
     }
 
-    return retval;
+    /* cmpval == 0 */
+    if (!(bistree_is_hidden(node))) {
+        return 0;
+    } else {
+        /* Return that the data was not found */
+        return -1;
+    }
 }
 
 
@@ -220,7 +218,7 @@ static int s_morse_decode_char(const morse_tree_td *morse,
         } else if (c == MORSE_DAH[0]) {
             node = bitree_right(node);
         } else {
-            /* Unexpected character in morse_str */
+            /* Unexpected character in 'morse_str' */
             return -1;
         }
 
@@ -255,7 +253,6 @@ morse_tree_td *morse_init(void)
 
 
 /* Encode a entire string until the 'NULL' character is found */
-// TODO: Consider using 'strtok' to separate words
 int morse_encode(const morse_tree_td *morse,
         char *dst, const char *src, uint8_t flags)
 {
@@ -353,8 +350,8 @@ int morse_decode(const morse_tree_td *morse,
     char token[MORSE_MESSAGE_MAX_LENGTH + 1];
     size_t tok_pos = 0;
     size_t out_pos = 0;
-    size_t i = 0;
     size_t src_len;
+    size_t i = 0;
 
     if (morse == NULL || dst == NULL || src == NULL) {
         return -1;
