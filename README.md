@@ -1,9 +1,9 @@
 # `morse` -- Morse encoder and decoder C library
 
-Encode text messages into Morse code using a binary search tree (AVL
-tree) structure.  It supports customizable encoding options, including
-separators and prosigns, to facilitate Morse code transmission and
-decoding.
+Encode text messages into Morse code and decode them using a binary
+search tree (AVL tree) structure.  It supports customizable encoding
+options, including separators and prosigns, to facilitate Morse code
+transmission and decoding.
 
 ## Features
 
@@ -53,7 +53,7 @@ Decode a Morse code string into ASCII:
     char decoded[MORSE_MESSAGE_MAX_LENGTH + 1] = {'\0'};
     const char *input = "... --- ... / .- .-."; /* "SOS AR" (SOS AR) */
 
-    if (morse_decode(morse, decoded, input, MORSE_USE_SEPARATORS) != 0) {
+    if (morse_decode(morse_tree, decoded, input, MORSE_USE_SEPARATORS) != 0) {
         fprintf(stderr, "Decoding failed\n");
         morse_destroy(morse_tree);
         return -1;
