@@ -59,14 +59,15 @@ int main(void)
 #ifdef DEBUG
     printf("Morse tree:\n");
     s_morse_print(bitree_root(morse), 2);
+    printf("Root: %c\n", *(char *) bistree_data(bitree_root(morse)));
+    printf("Fctr: %d\n", bistree_factor(bitree_root(morse)));
     printf("Size: %lu\n", bistree_size(morse));
-    //printf("Root: %c\n", *(char *) bistree_data(bitree_root(morse)));
-    //printf("Fctr: %d\n", bistree_factor(bitree_root(morse)));
+    printf("\n");
 #endif  /* ! DEBUG */
 
     /* Encode */
     if (morse_encode(morse, encoded, "What hath God wrought",
-            MORSE_USE_SEPARATORS | MORSE_USE_PROSIGNS) != 0) {
+                MORSE_USE_SEPARATORS | MORSE_USE_PROSIGNS) != 0) {
         fprintf(stderr, "Encoding failed\n");
         morse_destroy(morse);
         return 2;
@@ -76,7 +77,7 @@ int main(void)
 
     /* Decode */
     if (morse_decode(morse, decoded, encoded,
-                MORSE_USE_SEPARATORS) != 0) {
+                MORSE_USE_SEPARATORS | MORSE_USE_PROSIGNS) != 0) {
         fprintf(stderr, "Decoding failed\n");
         morse_destroy(morse);
         return 2;
