@@ -51,7 +51,7 @@ Encode an ASCII string into Morse code:
 Decode a Morse code string into ASCII:
 
     char decoded[MORSE_MESSAGE_MAX_LENGTH + 1] = {'\0'};
-    const char *input = "... --- ... / .- .-."; /* "SOS AR" (SOS AR) */
+    const char *input = "...   ---   ...       .-   .-.";   /* "SOS AR" */
 
     if (morse_decode(morse_tree, decoded, input, MORSE_USE_SEPARATORS) != 0) {
         fprintf(stderr, "Decoding failed\n");
