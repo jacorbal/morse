@@ -40,8 +40,8 @@ Encode an ASCII string into Morse code:
 
         if (morse_encode(morse_tree, morse_message, input,
                      MORSE_USE_SEPARATORS | MORSE_USE_PROSIGNS) != 0) {
-        fprintf(stderr, "Encoding failed\n");
-        morse_destroy(morse);
+            fprintf(stderr, "Encoding failed\n");
+            morse_destroy(morse);
             return -1;
         }
         printf("Morse code: %s\n", encoded);
@@ -62,7 +62,6 @@ Decode a Morse code string into ASCII:
 
 ### Flags
 
-- Flags:
   - **`MORSE_NO_FLAGS`**.  No special features.
   - **`MORSE_USE_SEPARATORS`**.  Use spaces to separate characters and
     words.
